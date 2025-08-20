@@ -165,3 +165,6 @@ pyvenv.cfg
 
 # Ignore generated credentials from google-github-actions/auth
 gha-creds-*.json
+
+# Ignore python / zsh magic
+.envrc

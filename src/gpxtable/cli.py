@@ -93,7 +93,7 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "input", nargs="+", type=argparse.FileType("r"), help="input file(s)"
+        "input", nargs="*", type=argparse.FileType("r"), help="input file(s)"
     )
     parser.add_argument("-o", "--output", type=str, help="The path to the output file")
     parser.add_argument(
@@ -132,13 +132,19 @@ def main() -> None:
     if args.config:
         config = json.load(args.config)
 
+    if not args.input and not args.dump_config:
+        parser.print_usage()
+        sys.exit(2)
+
     with (
         open(args.output, "w", encoding="utf-8") if args.output else sys.stdout
     ) as output:
         if args.dump_config:
             json.dump(config or GPXTABLE_DEFAULT_WAYPOINT_CLASSIFIER,
                        output, indent=4, sort_keys=True)
-        elif args.html:
+            return
+
+        if args.html:
             with io.StringIO() as buffer:
                 create_markdown(args, file=buffer, config=config)
                 buffer.flush()

@@ -117,10 +117,13 @@ replacement classifier.
 
 The `--config` command takes a JSON file as an argument. This file contains
 parameters for classifying different waypoints and how they should be treated.
-See the API documentation for the format and values.
+See the API documentation for the format of these values.
 
 
-The `--dump-config` command still requires an input filename, but it will
-ignore it, display what it thinks is our current configuration (either the
-default configuration or one loaded by `--config` and then exit.
+The `--dump-config` display what it thinks is our current configuration
+(either the default configuration or one loaded by `--config` and then exit.
+
+.. literalinclude:: ../samples/default-config.json
+   :caption: gpxtable --dump-config
+   :language: json
 

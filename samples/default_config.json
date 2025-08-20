@@ -1,0 +1,36 @@
+[
+    {
+        "delay": 75,
+        "fuel_reset": true,
+        "marker": "GL",
+        "search": "(?=.*\\b(Gas|Fuel)\\b)(?=.*\\b(Lunch|Meal)\\b)",
+        "symbol": "Gas/Restaurant"
+    },
+    {
+        "delay": 15,
+        "fuel_reset": true,
+        "marker": "G",
+        "search": "\\bGas\\b|\\bFuel\\b|\\b\\(G\\)\\b",
+        "symbol": "Gas Station"
+    },
+    {
+        "delay": 60,
+        "marker": "L",
+        "search": "\\bRestaurant\\b|\\bLunch\\b|\\bBreakfast\\b|\\b\\Dinner\\b|\\b\\(L\\)\\b",
+        "symbol": "Restaurant"
+    },
+    {
+        "delay": 15,
+        "search": "\\bRestroom\\b|\\bBreak\\b|\\b\\(R\\)\\b",
+        "symbol": "Restroom"
+    },
+    {
+        "delay": 5,
+        "symbol": "Scenic Area"
+    },
+    {
+        "delay": 5,
+        "search": "\\bPhotos?\\b|\\b\\(P\\)\\b",
+        "symbol": "Photo"
+    }
+]
