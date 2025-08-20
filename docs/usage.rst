@@ -7,7 +7,7 @@ Once installed, invoke the command line script as `gpxtable`.
 
    $ gpxtable --help
    usage: gpxtable [-h] [--departure DEPARTURE] [--ignore-times] [--speed SPEED]
-             [--html] [--metric] [--coordinates]
+             [--html] [--metric] [--coordinates] [--config CONFIG] [--dump-config]
              input [input ...]
 
    positional arguments:
@@ -22,6 +22,8 @@ Once installed, invoke the command line script as `gpxtable`.
       --html                output in HTML, not markdown
       --metric              Use metric units (default imperial)
       --coordinates         Display latitude and longitude of waypoints
+      --config CONFIG       config file
+      --dump-config         dump current config and exit
 
 The output is a human-readable markdown-format table which may be included in
 published information about the trip. Additionally, `gpxtable` can produce HTML
@@ -105,3 +107,20 @@ Limitations:
 
    - A pseudo-waypoint will be added indicating the last point in the track. If
      this is redundant with the final waypoint, it will not be added.
+
+Waypoint Classifer
+------------------
+
+The command line version of this program adds the ability to either print
+the current waypoint classifier configuration and exit, or to load a
+replacement classifier.
+
+The `--config` command takes a JSON file as an argument. This file contains
+parameters for classifying different waypoints and how they should be treated.
+See the API documentation for the format and values.
+
+
+The `--dump-config` command still requires an input filename, but it will
+ignore it, display what it thinks is our current configuration (either the
+default configuration or one loaded by `--config` and then exit.
+

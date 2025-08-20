@@ -4,6 +4,7 @@ gpxtable.cli - Command line interface for GPXTable module
 
 import argparse
 import io
+import json
 import sys
 from datetime import datetime
 
@@ -14,10 +15,10 @@ import gpxpy.geo
 import gpxpy.utils
 import markdown2
 
-from gpxtable import GPXTableCalculator
+from gpxtable import GPXTableCalculator, GPXTABLE_DEFAULT_WAYPOINT_CLASSIFIER
 
 
-def create_markdown(args, file=None) -> None:
+def create_markdown(args, file=None, config=None) -> None:
     """
     Creates a markdown table based on GPX information provided in the input files.
 
@@ -44,6 +45,7 @@ def create_markdown(args, file=None) -> None:
                     depart_at=args.departure,
                     display_coordinates=args.coordinates,
                     ignore_times=args.ignore_times,
+                    point_classifier=config,
                     tz=tz,
                 ).print_all()
             except gpxpy.gpx.GPXException as err:
@@ -118,25 +120,34 @@ def main() -> None:
         help="Display latitude and longitude of waypoints",
     )
     parser.add_argument("--timezone", type=str, help="Override timezone")
+    parser.add_argument("--config", type=argparse.FileType("r"), help="config file")
+    parser.add_argument("--dump-config", action="store_true", help="dump current config and exit")
 
     try:
         args = parser.parse_args()
     except ValueError as err:
         raise SystemExit(err) from err
 
+    config = None
+    if args.config:
+        config = json.load(args.config)
+
     with (
         open(args.output, "w", encoding="utf-8") if args.output else sys.stdout
     ) as output:
-        if args.html:
+        if args.dump_config:
+            json.dump(config or GPXTABLE_DEFAULT_WAYPOINT_CLASSIFIER,
+                       output, indent=4, sort_keys=True)
+        elif args.html:
             with io.StringIO() as buffer:
-                create_markdown(args, file=buffer)
+                create_markdown(args, file=buffer, config=config)
                 buffer.flush()
                 print(
                     markdown2.markdown(buffer.getvalue(), extras=["tables"]),
                     file=output,
                 )
         else:
-            create_markdown(args, file=output)
+            create_markdown(args, file=output, config=config)
 
 
 if __name__ == "__main__":
