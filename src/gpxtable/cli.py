@@ -149,7 +149,11 @@ def main() -> None:
                 create_markdown(args, file=buffer, config=config)
                 buffer.flush()
                 print(
-                    markdown2.markdown(buffer.getvalue(), extras=["tables"]),
+                    markdown2.markdown(buffer.getvalue(),
+                                       extras={
+                                           "tables": None,
+                                           "html-classes": {
+                                               "table": "gpxtable"}}),
                     file=output,
                 )
         else:

@@ -100,7 +100,9 @@ def create_table(stream, tz=None):
         output = buffer.getvalue()
         if output_format == "markdown":
             return output
-        output = str(markdown2.markdown(output, extras=["tables"]))
+        output = str(markdown2.markdown(output, extras={"tables": None,
+                                                        "html-classes": {
+                                                            "table": "gpxtable"}}))
         return html.escape(output) if output_format == "htmlcode" else output
 
 
