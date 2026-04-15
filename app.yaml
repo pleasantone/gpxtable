@@ -1,5 +1,5 @@
 runtime: python312
-entrypoint: gunicorn -b :$PORT "src.gpxtable.wsgi:create_app()"
+entrypoint: gunicorn -w 4 --timeout 60 -b :$PORT "src.gpxtable.wsgi:create_app()"
 env_variables:
   TZ: "America/Los_Angeles"
 

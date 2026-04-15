@@ -2,10 +2,12 @@
 gpxtable - Create a markdown template from a Garmin GPX file for route information
 """
 
+from __future__ import annotations
+
 import math
 import re
 from datetime import datetime, timedelta, tzinfo
-from typing import Optional, Union, List, NamedTuple, TextIO
+from typing import NamedTuple, TextIO
 
 import astral
 import astral.sun
@@ -27,7 +29,7 @@ GPXTABLE_XML_NAMESPACE = {
 }
 
 
-GPXTABLE_DEFAULT_WAYPOINT_CLASSIFIER: List[dict] = [
+GPXTABLE_DEFAULT_WAYPOINT_CLASSIFIER: list[dict] = [
     {
         "symbol": "Gas/Restaurant",
         "search": r"(?=.*\b(Gas|Fuel)\b)(?=.*\b(Lunch|Meal)\b)",
@@ -98,7 +100,7 @@ class GPXTrackExt:
     def __init__(self, track):
         self.gpx_track = track
 
-    def get_points_data(self, distance_2d: bool = False) -> List[PointData]:
+    def get_points_data(self, distance_2d: bool = False) -> list[PointData]:
         """
         Returns a list of tuples containing the actual waypoint, its distance from the start,
         track_no, segment_no, and segment_point_no
@@ -132,7 +134,7 @@ class GPXTrackExt:
         location: gpxpy.geo.Location,
         threshold_distance: float = 0.01,
         deduplicate_distance: float = 0.0,
-    ) -> List[NearestLocationDataExt]:
+    ) -> list[NearestLocationDataExt]:
         """
         Returns:
             list: locations of elements where the location may be on the track
@@ -148,10 +150,10 @@ class GPXTrackExt:
         """
 
         def _deduplicate(
-            locations: List[NearestLocationDataExt], delta: float = 0.0
-        ) -> List[NearestLocationDataExt]:
-            previous: Optional[NearestLocationDataExt] = None
-            filtered: List[NearestLocationDataExt] = []
+            locations: list[NearestLocationDataExt], delta: float = 0.0
+        ) -> list[NearestLocationDataExt]:
+            previous: NearestLocationDataExt | None = None
+            filtered: list[NearestLocationDataExt] = []
             for current in locations:
                 if (
                     not previous
@@ -166,10 +168,10 @@ class GPXTrackExt:
         if not points:
             return []
 
-        result: List[NearestLocationDataExt] = []
-        distance: Optional[float] = points[-1][1]
+        result: list[NearestLocationDataExt] = []
+        distance: float | None = points[-1][1]
         threshold = (distance or 0.0) * threshold_distance
-        candidate: Optional[NearestLocationDataExt] = None
+        candidate: NearestLocationDataExt | None = None
 
         for point, distance_from_start, track_no, segment_no, point_no in points:
             distance = location.distance_3d(point) or math.inf
@@ -200,8 +202,8 @@ class GPXPointMixin:
 
     def __init__(
         self,
-        base: Union[GPXWaypoint, GPXRoutePoint],
-        point_classifier: Optional[List[dict]] = None,
+        base: GPXWaypoint | GPXRoutePoint,
+        point_classifier: list[dict] | None = None,
     ):
         if not isinstance(self, (GPXWaypoint, GPXRoutePoint)):
             raise TypeError("Not extending a GPXWaypoint or GPXRoutePoint")
@@ -298,9 +300,9 @@ class GPXRoutePointExt(GPXPointMixin, GPXRoutePoint):
 
     def departure_time(
         self,
-        use_departure: Optional[bool] = False,
-        depart_at: Optional[datetime] = None,
-    ) -> Optional[datetime]:
+        use_departure: bool | None = False,
+        depart_at: datetime | None = None,
+    ) -> datetime | None:
         """returns datetime object for route point with departure times or None"""
         if use_departure and depart_at:
             return depart_at
@@ -348,14 +350,14 @@ class GPXTableCalculator:
     def __init__(
         self,
         gpx: GPX,
-        output: Optional[TextIO] = None,
+        output: TextIO | None = None,
         imperial: bool = True,
         speed: float = 30.0 / KM_TO_MILES,
-        depart_at: Optional[datetime] = None,
+        depart_at: datetime | None = None,
         ignore_times: bool = False,
         display_coordinates: bool = False,
-        tz: Optional[tzinfo] = None,
-        point_classifier: Optional[List[dict]] = None,
+        tz: tzinfo | None = None,
+        point_classifier: list[dict] | None = None,
     ) -> None:
         self.gpx = gpx
         self.output = output
@@ -363,7 +365,7 @@ class GPXTableCalculator:
             speed / KM_TO_MILES if imperial else speed
         ) or self.default_travel_speed
         self.imperial: bool = imperial
-        self.depart_at: Optional[datetime] = depart_at
+        self.depart_at: datetime | None = depart_at
         self.ignore_times: bool = ignore_times
         self.display_coordinates: bool = display_coordinates
         self.tz = tz
@@ -683,7 +685,7 @@ class GPXTableCalculator:
 
         return length_str + unit_suffix
 
-    def _format_speed(self, speed: Optional[float], units: bool = False) -> str:
+    def _format_speed(self, speed: float | None, units: bool = False) -> str:
         """speed is in kph"""
         speed = speed or 0.0
         if self.imperial:
@@ -696,8 +698,8 @@ class GPXTableCalculator:
 
     def _sun_rise_set(
         self,
-        start: Union[GPXRoutePoint, GPXTrackPoint],
-        end: Union[GPXRoutePoint, GPXTrackPoint],
+        start: GPXRoutePoint | GPXTrackPoint,
+        end: GPXRoutePoint | GPXTrackPoint,
         delay: timedelta = timedelta(),
     ) -> str:
         """return sunrise/sunset and start & end info based upon the route start and end point"""

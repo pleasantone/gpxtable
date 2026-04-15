@@ -31,13 +31,11 @@ dependencies = [
 web = [
     "flask>=3.0.0",
     "requests>=2.32.3",
-    "validators>=0.32"
 ]
 gunicorn = [
     "flask>=3.0.0",
     "gunicorn>=22.0.0",
     "requests>=2.32.3",
-    "validators>=0.32"
 ]
 tests = [
     "pytest",

@@ -2,29 +2,32 @@
 gpxtable.wsgi - Flask Blueprint/Application for running gpxtable as a server
 """
 
-import io
+from __future__ import annotations
+
 import html
+import io
+import os
 import secrets
-from datetime import datetime
-from flask import (
-    Flask,
-    Blueprint,
-    request,
-    current_app,
-    flash,
-    redirect,
-    render_template,
-    url_for,
-)
+from datetime import datetime, tzinfo
+from typing import IO
+from urllib.parse import urlparse
 
 import dateutil.parser
 import dateutil.tz
 import gpxpy.gpx
-import gpxpy.geo
-import gpxpy.utils
 import markdown2
 import requests
-import validators
+from flask import (
+    Blueprint,
+    Flask,
+    Response,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 from gpxtable import GPXTableCalculator
 
@@ -37,35 +40,41 @@ bp = Blueprint("gpxtable", __name__)
 
 
 @bp.errorhandler(InvalidSubmission)
-def invalid_submission(err):
-    """
-    Handles invalid form submissions and redirects to the upload file page.
-
-    Args:
-        err: The error message indicating the reason for the invalid submission.
-
-    Returns:
-        Flask response: Redirects to the upload file page.
-    """
+def invalid_submission(err: InvalidSubmission) -> Response:
+    """Handles invalid form submissions and redirects to the upload file page."""
     flash(str(err))
     current_app.logger.info(err)
     return redirect(url_for("gpxtable.upload_file"))
 
 
-def create_table(stream, tz=None):
+def create_table(
+    stream: IO[bytes],
+    *,
+    tz: tzinfo | None = None,
+    departure: str | None = None,
+    ignore_times: bool = False,
+    display_coordinates: bool = False,
+    imperial: bool = True,
+    speed: float = 0.0,
+    output_format: str = "html",
+) -> str:
     """
-    Creates a table from a GPX stream based on user input.
+    Creates a table from a GPX stream.
 
     Args:
         stream: The GPX stream data.
-        tz: The timezone information (default: None).
+        tz: The timezone information (default: local time).
+        departure: Departure time string (default: None).
+        ignore_times: Ignore track times (default: False).
+        display_coordinates: Display lat/lon (default: False).
+        imperial: Use imperial units (default: True).
+        speed: Travel speed override (default: 0.0).
+        output_format: Output format — 'markdown', 'html', or 'htmlcode'.
 
     Returns:
-        str: The formatted table output based on user preferences.
+        str: The formatted table output.
     """
-
-    departure = request.form.get("departure")
-    if not tz:
+    if tz is None:
         tz = dateutil.tz.tzlocal()
     depart_at = (
         dateutil.parser.parse(
@@ -75,12 +84,6 @@ def create_table(stream, tz=None):
         if departure
         else None
     )
-
-    ignore_times = request.form.get("ignore_times") == "on"
-    display_coordinates = request.form.get("coordinates") == "on"
-    imperial = request.form.get("metric") != "on"
-    speed = float(request.form.get("speed") or 0.0)
-    output_format = request.form.get("output")
 
     with io.StringIO() as buffer:
         try:
@@ -98,32 +101,32 @@ def create_table(stream, tz=None):
             raise InvalidSubmission(f"Unable to parse GPX information: {err}") from err
 
         output = buffer.getvalue()
-        if output_format == "markdown":
-            return output
-        output = str(markdown2.markdown(output, extras={"tables": None,
-                                                        "html-classes": {
-                                                            "table": "gpxtable"}}))
-        return html.escape(output) if output_format == "htmlcode" else output
+
+    if output_format == "markdown":
+        return output
+    rendered = str(
+        markdown2.markdown(
+            output,
+            extras={"tables": None, "html-classes": {"table": "gpxtable"}},
+        )
+    )
+    return html.escape(rendered) if output_format == "htmlcode" else rendered
 
 
 @bp.route("/", methods=["GET", "POST"])
-def upload_file():
-    """
-    Handles file upload and processing based on user input, otherwise renders the upload page.
-
-    Returns:
-        str: The rendered template output or the result of processing the uploaded file.
-    """
-
+def upload_file() -> str:
+    """Handles file upload and URL submission, otherwise renders the upload page."""
     if request.method != "POST":
         return render_template("upload.html")
+
     if url := request.form.get("url"):
-        if not validators.url(url):
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
             raise InvalidSubmission("Invalid URL")
         try:
             response = requests.get(url, timeout=30)
             response.raise_for_status()
-            file = io.BytesIO(response.content)
+            file: IO[bytes] = io.BytesIO(response.content)
         except requests.RequestException as err:
             raise InvalidSubmission(f"Unable to retrieve URL: {err}") from err
     elif file := request.files.get("file"):
@@ -140,32 +143,29 @@ def upload_file():
         if not tz:
             raise InvalidSubmission("Invalid timezone")
 
-    if isinstance(result := create_table(file, tz=tz), str):
-        return render_template(
-            "results.html", output=result, format=request.form.get("output")
-        )
-    return result
+    result = create_table(
+        file,
+        tz=tz,
+        departure=request.form.get("departure"),
+        ignore_times=request.form.get("ignore_times") == "on",
+        display_coordinates=request.form.get("coordinates") == "on",
+        imperial=request.form.get("metric") != "on",
+        speed=float(request.form.get("speed") or 0.0),
+        output_format=request.form.get("output") or "html",
+    )
+    return render_template("results.html", output=result, format=request.form.get("output"))
 
 
 @bp.route("/about")
-def about():
-    """
-    Renders the 'about.html' template.
-
-    Returns:
-        Flask response: Renders the 'about.html' template.
-    """
+def about() -> str:
+    """Renders the about page."""
     return render_template("about.html")
 
 
-def create_app():
-    """factory for creating an app from our blueprint"""
+def create_app() -> Flask:
+    """Factory for creating the Flask application."""
     app = Flask(__name__)
     app.config["MAX_CONTENT_LENGTH"] = 16 * 1000 * 1000  # 16mb
-    app.config["SECRET_KEY"] = secrets.token_urlsafe(16)
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_urlsafe(32)
     app.register_blueprint(bp)
     return app
-
-
-if __name__ == "__main__":
-    application = create_app()
