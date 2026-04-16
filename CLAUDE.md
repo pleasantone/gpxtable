@@ -9,11 +9,11 @@ GPXtable converts GPX files (routes and tracks with waypoints) into Markdown or 
 ## Commands
 
 ```bash
-# Install for development (includes web/gunicorn extras)
-pip install -e ".[gunicorn,tests]"
+# Install for development (all extras: gunicorn, tests, lint/mypy)
+pip install -e ".[dev]"
 
 # Run all tests
-pytest
+TZ=America/Los_Angeles pytest
 
 # Run a single test file
 pytest tests/test_cli.py
@@ -24,9 +24,11 @@ pytest tests/test_gpxtable.py::test_print_header
 # Regenerate expected CLI output files in samples/
 python tests/test_cli.py --generate
 
-# Lint
-flake8 .
+# Lint (ruff only — replaces flake8)
 ruff check .
+
+# Type check
+mypy src/
 
 # Run the CLI
 gpxtable samples/basecamp-route.gpx
@@ -38,7 +40,28 @@ gpxtable --config myconfig.json samples/basecamp-route.gpx
 
 # Run the Flask dev server
 flask --app gpxtable.wsgi:create_app run
+
+# Run the production server locally
+gunicorn --pythonpath src "gpxtable.wsgi:create_app()"
 ```
+
+All common targets are also available via `make` — run `make help` for the full list.
+
+## Commit messages
+
+This project uses [release-please](https://github.com/googleapis/release-please), which parses commit messages to determine version bumps and generate changelogs. **All commits must use the Conventional Commits format:**
+
+- `feat:` — new user-facing feature (minor bump)
+- `fix:` — bug fix (patch bump)
+- `ci:` — CI/CD changes (no release)
+- `chore:` — maintenance, deps, tooling (no release)
+- `docs:` — documentation only (no release)
+- `refactor:` — code restructuring, no behavior change (no release)
+- `test:` — test changes only (no release)
+- `build:` — build system / packaging (no release)
+- `BREAKING CHANGE:` footer or `!` after type → major bump
+
+Scope is optional but encouraged: `fix(wsgi):`, `ci(github-actions):`, etc.
 
 ## Architecture
 
@@ -72,4 +95,16 @@ Unit tests construct `GPX` objects directly (no file I/O) and assert on `StringI
 
 ## Deployment
 
-Deploys to Google App Engine on push to `main` via `.github/workflows/python-app.yml`. The `SECRET_KEY` for Flask sessions comes from `SECRET_KEY` environment variable or a random token per startup. Max upload size is 16 MB.
+Deploys to Google App Engine on push to `main` via `.github/workflows/python-app.yml`. The pipeline is:
+
+```
+lint + test → deploy-to-gae → release-please
+```
+
+release-please only runs after a successful GAE deployment.
+
+**`requirements.txt`** lists the production runtime deps (flask, gunicorn, gpxpy, etc.) and is required for GAE — the platform reads this file to install dependencies, it does not read `pyproject.toml`. Keep it in sync with the `web`/`gunicorn` extras in `pyproject.toml`.
+
+**`app.yaml`** entrypoint uses `--pythonpath src "gpxtable.wsgi:create_app()"` so the module address matches the installed package name.
+
+The `SECRET_KEY` for Flask sessions comes from the `SECRET_KEY` environment variable or a random token per startup. Max upload size is 16 MB.
