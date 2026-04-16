@@ -1,0 +1,9 @@
+# Production dependencies for Google App Engine deployment.
+# GAE uses this file to install deps; pyproject.toml is used for local dev.
+astral>=3.2
+gpxpy>=1.6.2
+markdown2>=2.4.13
+python-dateutil>=2.9
+flask>=3.0.0
+requests>=2.32.3
+gunicorn>=22.0.0
