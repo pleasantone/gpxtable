@@ -8,9 +8,7 @@ import logging
 import math
 import re
 from datetime import datetime, timedelta, tzinfo
-from typing import NamedTuple, TextIO
-
-logger = logging.getLogger(__name__)
+from typing import Any, NamedTuple, TextIO, cast
 
 import astral
 import astral.sun
@@ -23,6 +21,8 @@ from gpxpy.gpx import (
     PointData,
 )
 
+logger = logging.getLogger(__name__)
+
 KM_TO_MILES = 0.621371
 M_TO_FEET = 3.28084
 
@@ -32,7 +32,7 @@ GPXTABLE_XML_NAMESPACE = {
 }
 
 
-GPXTABLE_DEFAULT_WAYPOINT_CLASSIFIER: list[dict] = [
+GPXTABLE_DEFAULT_WAYPOINT_CLASSIFIER: list[dict[str, Any]] = [
     {
         "symbol": "Gas/Restaurant",
         "search": r"(?=.*\b(Gas|Fuel)\b)(?=.*\b(Lunch|Meal)\b)",
@@ -203,10 +203,18 @@ class GPXPointMixin:
     extensions
     """
 
+    # Class-level annotations for attributes provided by GPXWaypoint/GPXRoutePoint
+    # via cooperative MIH, or set in __init__. Required for mypy to resolve types
+    # in method bodies despite the MIH pattern.
+    point_classifier: list[dict[str, Any]]
+    symbol: str | None
+    name: str | None
+    extensions: list[Any]
+
     def __init__(
         self,
         base: GPXWaypoint | GPXRoutePoint,
-        point_classifier: list[dict] | None = None,
+        point_classifier: list[dict[str, Any]] | None = None,
     ):
         if not isinstance(self, (GPXWaypoint, GPXRoutePoint)):
             raise TypeError("Not extending a GPXWaypoint or GPXRoutePoint")
@@ -227,7 +235,7 @@ class GPXPointMixin:
         self.point_classifier = point_classifier or GPXTABLE_DEFAULT_WAYPOINT_CLASSIFIER
         self.extensions = base.extensions
 
-    def _classify(self):
+    def _classify(self) -> dict[str, Any]:
         if not isinstance(
             self,
             (
@@ -256,12 +264,12 @@ class GPXPointMixin:
     def marker(self) -> str:
         """Single or dual character marker for a given waypoint e.g. G, L, GL"""
         values = self._classify()
-        return values.get("marker", "")
+        return cast(str, values.get("marker", ""))
 
     def fuel_stop(self) -> bool:
         """Is this a fuel stop, should we reset?"""
         values = self._classify()
-        return values.get("fuel_reset", False)
+        return cast(bool, values.get("fuel_reset", False))
 
     def shaping_point(self) -> bool:
         """Is this route point is a shaping or via point and should be ignored"""
@@ -282,11 +290,11 @@ class GPXPointMixin:
         return any("ShapingPoint" in extension.tag for extension in self.extensions)
 
 
-class GPXWaypointExt(GPXPointMixin, GPXWaypoint):
+class GPXWaypointExt(GPXPointMixin, GPXWaypoint):  # type: ignore[misc]
     """GPXWaypoint including extra functions from Mixin"""
 
 
-class GPXRoutePointExt(GPXPointMixin, GPXRoutePoint):
+class GPXRoutePointExt(GPXPointMixin, GPXRoutePoint):  # type: ignore[misc]
     """GPXRoutePoint including extra functions from Mixin"""
 
     def delay(self) -> timedelta:
@@ -477,7 +485,7 @@ class GPXTableCalculator:
 
         self._populate_times()
         for track in self.gpx.tracks:
-            waypoints = [
+            candidates = [
                 (
                     wp,
                     GPXTrackExt(track).get_nearest_locations(
@@ -491,7 +499,7 @@ class GPXTableCalculator:
                 if not wp.shaping_point()
             ]
             waypoints = sorted(
-                [(wp, tp) for wp, tps in waypoints for tp in tps],
+                [(wp, tp) for wp, tps in candidates for tp in tps],
                 key=lambda entry: entry[1].point_no,
             )
 

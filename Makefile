@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-unit test-cli lint lint-flake8 lint-ruff typecheck \
+.PHONY: help install install-dev test test-unit test-cli lint typecheck \
         generate-samples run-web run-web-gunicorn \
         demo-route demo-tracks demo-basecamp demo-config \
         build clean
@@ -9,7 +9,7 @@ help:
 	@echo ""
 	@echo "Setup"
 	@echo "  install        Install package (core deps only)"
-	@echo "  install-dev    Install package with all extras (web, gunicorn, tests)"
+	@echo "  install-dev    Install package with all extras (dev = gunicorn + tests + lint)"
 	@echo ""
 	@echo "Testing"
 	@echo "  test           Run all tests"
@@ -18,9 +18,7 @@ help:
 	@echo "  generate-samples  Regenerate expected CLI output files in samples/"
 	@echo ""
 	@echo "Linting"
-	@echo "  lint           Run all linters"
-	@echo "  lint-flake8    Run flake8"
-	@echo "  lint-ruff      Run ruff"
+	@echo "  lint           Run ruff linter"
 	@echo "  typecheck      Run mypy"
 	@echo ""
 	@echo "CLI demos"
@@ -44,7 +42,7 @@ install:
 	pip install -e .
 
 install-dev:
-	pip install -e ".[gunicorn,tests]"
+	pip install -e ".[dev]"
 
 # ── Testing ──────────────────────────────────────────────────────────────────
 
@@ -62,12 +60,7 @@ generate-samples:
 
 # ── Linting ──────────────────────────────────────────────────────────────────
 
-lint: lint-flake8 lint-ruff
-
-lint-flake8:
-	flake8 .
-
-lint-ruff:
+lint:
 	ruff check .
 
 typecheck:

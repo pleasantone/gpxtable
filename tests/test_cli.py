@@ -73,6 +73,20 @@ def test_bad_xml(run_cli) -> None:
     assert "Error parsing XML" in result.stderr
 
 
+def test_cli_invalid_departure(run_cli) -> None:
+    input_file, _ = input_output_names("basecamp-route")
+    result = run_cli(["--depart", "notadate", input_file])
+    assert result.returncode != 0
+    assert "invalid" in result.stderr.lower()
+
+
+def test_cli_invalid_timezone(run_cli) -> None:
+    input_file, _ = input_output_names("basecamp-route")
+    result = run_cli(["--timezone", "Fake/Zone", input_file])
+    assert result.returncode != 0
+    assert "invalid timezone" in result.stderr.lower()
+
+
 def generate_sample_output() -> None:
     for test_case, arguments in file_test_cases:
         input_file, output_file = input_output_names(test_case)

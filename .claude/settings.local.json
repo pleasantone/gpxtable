@@ -3,7 +3,13 @@
     "allow": [
       "Bash(python *)",
       "Bash(python3 *)",
-      "Bash(grep *)"
+      "Bash(grep *)",
+      "Bash(TZ=America/Los_Angeles pytest *)",
+      "Bash(make lint *)",
+      "Bash(pip install *)",
+      "Bash(make typecheck *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

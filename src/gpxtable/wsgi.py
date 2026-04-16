@@ -48,7 +48,7 @@ def invalid_submission(err: InvalidSubmission) -> Response:
     """Handles invalid form submissions and redirects to the upload file page."""
     flash(str(err))
     current_app.logger.info(err)
-    return redirect(url_for("gpxtable.upload_file"))
+    return redirect(url_for("gpxtable.upload_file"))  # type: ignore[return-value]
 
 
 def create_table(
@@ -94,7 +94,7 @@ def create_table(
     with io.StringIO() as buffer:
         try:
             GPXTableCalculator(
-                gpxpy.parse(stream),
+                gpxpy.parse(stream),  # type: ignore[type-var]
                 output=buffer,
                 depart_at=depart_at,
                 ignore_times=ignore_times,
@@ -126,12 +126,13 @@ def upload_file() -> str:
     if request.method != "POST":
         return render_template("upload.html")
 
+    file: IO[bytes]
     if url := request.form.get("url"):
         parsed = urlparse(url)
         if parsed.scheme not in ("http", "https") or not parsed.netloc:
             raise InvalidSubmission("Invalid URL")
         try:
-            ip = ip_address(parsed.hostname)
+            ip = ip_address(parsed.hostname or "")
             if ip.is_private or ip.is_loopback or ip.is_link_local:
                 logger.warning("Blocked request to private/loopback address: %s", url)
                 raise InvalidSubmission("Invalid URL")
@@ -141,14 +142,15 @@ def upload_file() -> str:
         try:
             response = requests.get(url, timeout=30)
             response.raise_for_status()
-            file: IO[bytes] = io.BytesIO(response.content)
+            file = io.BytesIO(response.content)
         except requests.RequestException as err:
             raise InvalidSubmission(f"Unable to retrieve URL: {err}") from err
-    elif file := request.files.get("file"):
+    elif uploaded := request.files.get("file"):
         # If the user does not select a file, the browser submits an
         # empty file without a filename.
-        if not file.filename:
+        if not uploaded.filename:
             raise InvalidSubmission("No file selected")
+        file = uploaded.stream
     else:
         raise InvalidSubmission("Missing URL for GPX file or uploaded file.")
 
