@@ -5,6 +5,7 @@ gpxtable.cli - Command line interface for GPXTable module
 import argparse
 import io
 import json
+import logging
 import sys
 from datetime import datetime
 
@@ -17,6 +18,8 @@ import markdown2
 
 from gpxtable import GPXTableCalculator, GPXTABLE_DEFAULT_WAYPOINT_CLASSIFIER
 
+logger = logging.getLogger(__name__)
+
 
 def create_markdown(args, file=None, config=None) -> None:
     """
@@ -25,15 +28,14 @@ def create_markdown(args, file=None, config=None) -> None:
     Args:
         args: Command line arguments containing input options.
         file: File to write the markdown output to.
-
-    Raises:
-        SystemExit: If there is an issue with the timezone or parsing the GPX information.
+        config: Optional waypoint classifier config list.
     """
     tz = None
     if args.timezone:
         tz = dateutil.tz.gettz(args.timezone)
         if not tz:
-            raise SystemExit(f"{args.timezone}: invalid timezone")
+            logger.error("%s: invalid timezone", args.timezone)
+            sys.exit(1)
     for handle in args.input:
         with handle as stream:
             try:
@@ -49,7 +51,8 @@ def create_markdown(args, file=None, config=None) -> None:
                     tz=tz,
                 ).print_all()
             except gpxpy.gpx.GPXException as err:
-                raise SystemExit(f"{handle.name}: {err}") from err
+                logger.error("%s: %s", handle.name, err)
+                sys.exit(1)
 
 
 class _DateParser(argparse.Action):
@@ -60,36 +63,28 @@ class _DateParser(argparse.Action):
     :meta private:
     """
 
-    def __call__(self, parser, namespace, values, option_strings=None):
-        setattr(
-            namespace,
-            self.dest,
-            dateutil.parser.parse(
-                values,
-                default=datetime.now(dateutil.tz.tzlocal()).replace(
-                    minute=0, second=0, microsecond=0
+    def __call__(self, parser, namespace, values, _option_strings=None):
+        try:
+            setattr(
+                namespace,
+                self.dest,
+                dateutil.parser.parse(
+                    values,
+                    default=datetime.now(dateutil.tz.tzlocal()).replace(
+                        minute=0, second=0, microsecond=0
+                    ),
                 ),
-            ),
-        )
+            )
+        except ValueError as err:
+            parser.error(f"invalid date/time {values!r}: {err}")
 
 
 def main() -> None:
     """
     Parses command line arguments to generate a table in either markdown
     or HTML format based on the provided input files.
-
-    Args:
-        None
-
-    Returns:
-        None
-
-    Side Effects:
-        Reads input files, processes data, and writes output to a file or stdout.
-
-    Returns:
-        None
     """
+    logging.basicConfig(stream=sys.stderr, format="%(message)s")
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -123,10 +118,7 @@ def main() -> None:
     parser.add_argument("--config", type=argparse.FileType("r"), help="config file")
     parser.add_argument("--dump-config", action="store_true", help="dump current config and exit")
 
-    try:
-        args = parser.parse_args()
-    except ValueError as err:
-        raise SystemExit(err) from err
+    args = parser.parse_args()
 
     config = None
     if args.config:
@@ -149,11 +141,11 @@ def main() -> None:
                 create_markdown(args, file=buffer, config=config)
                 buffer.flush()
                 print(
-                    markdown2.markdown(buffer.getvalue(),
-                                       extras={
-                                           "tables": None,
-                                           "html-classes": {
-                                               "table": "gpxtable"}}),
+                    markdown2.markdown(
+                        buffer.getvalue(),
+                        extras={"tables": None, "html-classes": {"table": "gpxtable"}},
+                        safe_mode="escape",
+                    ),
                     file=output,
                 )
         else:

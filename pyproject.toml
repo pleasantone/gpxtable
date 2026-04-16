@@ -12,7 +12,7 @@ keywords = ["GPS", "GPX", "Navigation", "Track", "Route", "Waypoints"]
 
 dynamic = ["version"]
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
@@ -33,9 +33,8 @@ web = [
     "requests>=2.32.3",
 ]
 gunicorn = [
-    "flask>=3.0.0",
+    "gpxtable[web]",
     "gunicorn>=22.0.0",
-    "requests>=2.32.3",
 ]
 tests = [
     "pytest",
@@ -57,3 +56,11 @@ version = {attr = "gpxtable.__version__"}
 
 [tool.setuptools.package-data]
 gpxtable = ["static/*", "templates/*"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

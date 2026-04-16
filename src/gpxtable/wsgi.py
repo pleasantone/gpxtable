@@ -6,9 +6,11 @@ from __future__ import annotations
 
 import html
 import io
+import logging
 import os
 import secrets
 from datetime import datetime, tzinfo
+from ipaddress import ip_address
 from typing import IO
 from urllib.parse import urlparse
 
@@ -30,6 +32,8 @@ from flask import (
 )
 
 from gpxtable import GPXTableCalculator
+
+logger = logging.getLogger(__name__)
 
 
 class InvalidSubmission(Exception):
@@ -76,14 +80,16 @@ def create_table(
     """
     if tz is None:
         tz = dateutil.tz.tzlocal()
-    depart_at = (
-        dateutil.parser.parse(
-            departure,
-            default=datetime.now(tz).replace(minute=0, second=0, microsecond=0),
-        )
-        if departure
-        else None
-    )
+
+    depart_at = None
+    if departure:
+        try:
+            depart_at = dateutil.parser.parse(
+                departure,
+                default=datetime.now(tz).replace(minute=0, second=0, microsecond=0),
+            )
+        except ValueError as err:
+            raise InvalidSubmission(f"Invalid departure time: {err}") from err
 
     with io.StringIO() as buffer:
         try:
@@ -97,7 +103,7 @@ def create_table(
                 speed=speed,
                 tz=tz,
             ).print_all()
-        except gpxpy.gpx.GPXXMLSyntaxException as err:
+        except gpxpy.gpx.GPXException as err:
             raise InvalidSubmission(f"Unable to parse GPX information: {err}") from err
 
         output = buffer.getvalue()
@@ -108,6 +114,7 @@ def create_table(
         markdown2.markdown(
             output,
             extras={"tables": None, "html-classes": {"table": "gpxtable"}},
+            safe_mode="escape",
         )
     )
     return html.escape(rendered) if output_format == "htmlcode" else rendered
@@ -123,6 +130,14 @@ def upload_file() -> str:
         parsed = urlparse(url)
         if parsed.scheme not in ("http", "https") or not parsed.netloc:
             raise InvalidSubmission("Invalid URL")
+        try:
+            ip = ip_address(parsed.hostname)
+            if ip.is_private or ip.is_loopback or ip.is_link_local:
+                logger.warning("Blocked request to private/loopback address: %s", url)
+                raise InvalidSubmission("Invalid URL")
+        except ValueError:
+            pass  # hostname is a domain name, not a raw IP — allow it
+        logger.info("Fetching GPX from URL: %s", url)
         try:
             response = requests.get(url, timeout=30)
             response.raise_for_status()
@@ -143,6 +158,11 @@ def upload_file() -> str:
         if not tz:
             raise InvalidSubmission("Invalid timezone")
 
+    try:
+        speed = float(request.form.get("speed") or 0.0)
+    except ValueError as err:
+        raise InvalidSubmission(f"Invalid speed: {err}") from err
+
     result = create_table(
         file,
         tz=tz,
@@ -150,7 +170,7 @@ def upload_file() -> str:
         ignore_times=request.form.get("ignore_times") == "on",
         display_coordinates=request.form.get("coordinates") == "on",
         imperial=request.form.get("metric") != "on",
-        speed=float(request.form.get("speed") or 0.0),
+        speed=speed,
         output_format=request.form.get("output") or "html",
     )
     return render_template("results.html", output=result, format=request.form.get("output"))

@@ -4,10 +4,13 @@ gpxtable - Create a markdown template from a Garmin GPX file for route informati
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 from datetime import datetime, timedelta, tzinfo
 from typing import NamedTuple, TextIO
+
+logger = logging.getLogger(__name__)
 
 import astral
 import astral.sun
@@ -555,56 +558,56 @@ class GPXTableCalculator:
             f" (+{str(delay)[:-3]})" if delay else "",
         )
 
+    def _print_route_header(self, route) -> None:
+        """Print the header lines for a single route."""
+        print(f"\n## Route: {route.name}", file=self.output)
+        if route.description:
+            print(f"* {route.description}", file=self.output)
+        print(self._format_output_header(), file=self.output)
+
+    def _process_route_point(
+        self,
+        point: GPXRoutePointExt,
+        dist: float,
+        last_gas: float,
+        last_point: bool,
+        first_point: bool,
+        timing: datetime | None,
+        last_display_distance: float,
+    ) -> tuple[datetime | None, float]:
+        """
+        Update timing and emit one route-point table row.
+
+        Returns updated (timing, last_display_distance). The caller is
+        responsible for updating last_gas after this call.
+        """
+        if not point.shaping_point():
+            if timing:
+                timing += self._travel_time(dist - last_display_distance)
+            last_display_distance = dist
+            if departure := point.departure_time(first_point, self.depart_at):
+                timing = departure
+            delay = (
+                point.delay() if not first_point and not last_point else timedelta()
+            )
+            # For display only: reset gas counter if we've looped back to an
+            # earlier track position (e.g. a new segment starting from 0).
+            display_last_gas = 0.0 if last_gas > dist else last_gas
+            print(
+                self._format_route_point_entry(
+                    point, dist, display_last_gas, last_point, first_point, timing, delay
+                ),
+                file=self.output,
+            )
+            if timing:
+                timing += delay
+        return timing, last_display_distance
+
     def print_routes(self) -> None:
-        """
-        Prints the details of routes and calculates and prints point details.
-
-        Args:
-            self: The GPXTableCalculator instance.
-
-        Returns:
-            None
-        """
-
-        def print_route_details(route):
-            print(f"\n## Route: {route.name}", file=self.output)
-            if route.description:
-                print(f"* {route.description}", file=self.output)
-            print(self._format_output_header(), file=self.output)
-
-        def calculate_and_print_point_details(
-            point,
-            dist,
-            last_gas,
-            last_point,
-            first_point,
-            timing,
-            delay,
-            last_display_distance,
-        ):
-            if not point.shaping_point():
-                if timing:
-                    timing += self._travel_time(dist - last_display_distance)
-                last_display_distance = dist
-                if departure := point.departure_time(first_point, self.depart_at):
-                    timing = departure
-                delay = (
-                    point.delay() if not first_point and not last_point else timedelta()
-                )
-                if last_gas > dist:
-                    last_gas = 0.0
-                print(
-                    self._format_route_point_entry(
-                        point, dist, last_gas, last_point, first_point, timing, delay
-                    ),
-                    file=self.output,
-                )
-                if timing:
-                    timing += delay
-            return timing, last_display_distance
-
+        """Print route headers and per-point detail rows for all routes."""
         for route in self.gpx.routes:
-            print_route_details(route)
+            logger.debug("Processing route: %s", route.name)
+            self._print_route_header(route)
             if not route.points:
                 continue
 
@@ -618,21 +621,14 @@ class GPXTableCalculator:
 
             if timing:
                 route_points[0].time = timing
-            delay = timedelta()
             last_display_distance = 0.0
 
             for point in route_points:
                 first_point = point is route_points[0]
                 last_point = point is route_points[-1]
-                timing, last_display_distance = calculate_and_print_point_details(
-                    point,
-                    dist,
-                    last_gas,
-                    last_point,
-                    first_point,
-                    timing,
-                    delay,
-                    last_display_distance,
+                timing, last_display_distance = self._process_route_point(
+                    point, dist, last_gas, last_point, first_point,
+                    timing, last_display_distance,
                 )
                 if point.fuel_stop():
                     last_gas = dist
