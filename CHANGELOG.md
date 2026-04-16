@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.0.2](https://github.com/pleasantone/gpxtable/compare/v2.0.1...v2.0.2) (2026-04-16)
+
+
+### Bug Fixes
+
+* **deploy:** restore requirements.txt for GAE and fix entrypoint path ([6ff7ed0](https://github.com/pleasantone/gpxtable/commit/6ff7ed022bb4746f8b808ec8ef3496344a0c2104))
+* **web:** update requests for CVE ([7d9622d](https://github.com/pleasantone/gpxtable/commit/7d9622da2f391bdc0557dac5b1338511c2719811))
+
+
+### Documentation
+
+* update CLAUDE.md with current commands, commit conventions, and GAE notes ([2c3553d](https://github.com/pleasantone/gpxtable/commit/2c3553d3e377194438c947b6e4dd31df3a03d751))
+
 ## [2.0.1](https://github.com/pleasantone/gpxtable/compare/v2.0.0...v2.0.1) (2024-08-06)
 
 
