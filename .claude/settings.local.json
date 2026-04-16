@@ -8,8 +8,7 @@
       "Bash(make lint *)",
       "Bash(pip install *)",
       "Bash(make typecheck *)",
-      "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "WebFetch(domain:api.github.com)"
     ]
   }
 }
