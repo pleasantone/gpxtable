@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.1](https://github.com/pleasantone/gpxtable/compare/v2.0.2...v2.2.1) (2026-05-19)
+
+
+### Miscellaneous Chores
+
+* fix requests dependancy, release 2.2.1 ([e54028b](https://github.com/pleasantone/gpxtable/commit/e54028b94e19c8b036e82e43a4b7f76214a06f61))
+* release 2.2.0 ([abe1718](https://github.com/pleasantone/gpxtable/commit/abe171860f6b46602f8459510c0d9f777f656e37))
+
 ## [2.0.2](https://github.com/pleasantone/gpxtable/compare/v2.0.1...v2.0.2) (2026-05-14)
 
 
