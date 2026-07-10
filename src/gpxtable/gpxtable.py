@@ -49,7 +49,7 @@ GPXTABLE_DEFAULT_WAYPOINT_CLASSIFIER: list[dict[str, Any]] = [
     },
     {
         "symbol": "Restaurant",
-        "search": r"\bRestaurant\b|\bLunch\b|\bBreakfast\b|\b\Dinner\b|\b\(L\)\b",
+        "search": r"\bRestaurant\b|\bLunch\b|\bBreakfast\b|\bDinner\b|\b\(L\)\b",
         "delay": 60,
         "marker": "L",
     },

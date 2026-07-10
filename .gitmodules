@@ -1,0 +1,3 @@
+[submodule "gpxsamples"]
+	path = gpxsamples
+	url = https://github.com/pleasantone/gpxsamples
