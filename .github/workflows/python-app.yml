@@ -42,6 +42,12 @@ jobs:
       with:
         # the test suite reads its GPX inputs from the gpxsamples submodule
         submodules: true
+        # gpxsamples is a separate private repo, and the default GITHUB_TOKEN is
+        # scoped to this repo alone -- it cannot clone it (GitHub reports that as
+        # "Repository not found"). GPXSAMPLES_TOKEN is a PAT with read access to
+        # both repos; checkout applies it to submodule fetches as well.
+        # Falls back to the default token so forks still check out the main repo.
+        token: ${{ secrets.GPXSAMPLES_TOKEN || github.token }}
     - uses: astral-sh/setup-uv@v9.0.0
       with:
         enable-cache: true

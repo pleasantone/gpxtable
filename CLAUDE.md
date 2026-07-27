@@ -108,6 +108,12 @@ lint + test → deploy-to-gae → release-please
 
 release-please only runs after a successful GAE deployment.
 
+### Required Actions secrets
+
+**`GPXSAMPLES_TOKEN`** — a PAT with read access to *both* `pleasantone/gpxtable` and the private `pleasantone/gpxsamples` submodule repo. The `test` job passes it to `actions/checkout`, which applies it to submodule fetches too. Without it the default `GITHUB_TOKEN` is scoped to this repo alone and the submodule clone fails with the misleading `Repository not found`. The workflow falls back to the default token when the secret is absent, so forks still check out the main repo (their `test` job will fail on the submodule).
+
+**`MY_RELEASE_PLEASE_TOKEN`** — used by the release-please job.
+
 **`requirements.txt`** lists the production runtime deps (flask, gunicorn, gpxpy, etc.) and is required for GAE — the platform reads this file to install dependencies, it does not read `pyproject.toml`. Keep it in sync with the `web`/`gunicorn` extras in `pyproject.toml`.
 
 **`app.yaml`** entrypoint uses `--pythonpath src "gpxtable.wsgi:create_app()"` so the module address matches the installed package name.
