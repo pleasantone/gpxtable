@@ -39,6 +39,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
+      with:
+        # the test suite reads its GPX inputs from the gpxsamples submodule
+        submodules: true
     - uses: astral-sh/setup-uv@v8.2.0
       with:
         enable-cache: true

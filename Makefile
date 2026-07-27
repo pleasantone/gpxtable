@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-unit test-cli lint typecheck \
+.PHONY: help install install-dev submodules test test-unit test-cli lint typecheck \
         generate-samples run-web run-web-gunicorn \
         demo-route demo-tracks demo-basecamp demo-config \
         build clean
@@ -10,6 +10,7 @@ help:
 	@echo "Setup"
 	@echo "  install        Install package (core deps only)"
 	@echo "  install-dev    Install package with all extras (dev = gunicorn + tests + lint)"
+	@echo "  submodules     Check out the gpxsamples submodule (GPX test inputs)"
 	@echo ""
 	@echo "Testing"
 	@echo "  test           Run all tests"
@@ -44,18 +45,22 @@ install:
 install-dev:
 	pip install -e ".[dev]"
 
+# GPX inputs used by the tests live in the gpxsamples submodule.
+submodules:
+	git submodule update --init --recursive
+
 # ── Testing ──────────────────────────────────────────────────────────────────
 
-test:
+test: submodules
 	TZ=America/Los_Angeles pytest
 
 test-unit:
 	TZ=America/Los_Angeles pytest tests/test_gpxtable.py
 
-test-cli:
+test-cli: submodules
 	TZ=America/Los_Angeles pytest tests/test_cli.py
 
-generate-samples:
+generate-samples: submodules
 	TZ=America/Los_Angeles python tests/test_cli.py --generate
 
 # ── Linting ──────────────────────────────────────────────────────────────────
@@ -69,19 +74,19 @@ typecheck:
 # ── CLI demos ────────────────────────────────────────────────────────────────
 
 demo-route:
-	gpxtable samples/basecamp-route.gpx
+	gpxtable gpxsamples/basecamp-route.gpx
 
 demo-tracks:
-	gpxtable --departure "07/30/2023 09:15:00" samples/basecamp-tracks.gpx
+	gpxtable --departure "07/30/2023 09:15:00" gpxsamples/basecamp-tracks.gpx
 
 demo-basecamp:
-	gpxtable samples/basecamp.gpx
+	gpxtable gpxsamples/basecamp.gpx
 
 demo-config:
 	gpxtable --dump-config
 
 demo-custom: /tmp/myconfig.json
-	gpxtable --config /tmp/myconfig.json samples/basecamp-route.gpx
+	gpxtable --config /tmp/myconfig.json gpxsamples/basecamp-route.gpx
 
 /tmp/myconfig.json:
 	gpxtable --dump-config > /tmp/myconfig.json
