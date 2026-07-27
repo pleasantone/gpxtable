@@ -15,9 +15,9 @@ import astral.sun
 import gpxpy.geo
 from gpxpy.gpx import (
     GPX,
-    GPXWaypoint,
     GPXRoutePoint,
     GPXTrackPoint,
+    GPXWaypoint,
     PointData,
 )
 

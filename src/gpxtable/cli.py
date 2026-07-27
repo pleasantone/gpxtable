@@ -11,12 +11,12 @@ from datetime import datetime
 
 import dateutil.parser
 import dateutil.tz
-import gpxpy.gpx
 import gpxpy.geo
+import gpxpy.gpx
 import gpxpy.utils
 import markdown2
 
-from gpxtable import GPXTableCalculator, GPXTABLE_DEFAULT_WAYPOINT_CLASSIFIER
+from gpxtable import GPXTABLE_DEFAULT_WAYPOINT_CLASSIFIER, GPXTableCalculator
 
 logger = logging.getLogger(__name__)
 
