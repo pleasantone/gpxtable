@@ -1,18 +1,18 @@
-import pytest
 from datetime import datetime, timedelta, timezone
 from io import StringIO
-from typing import Tuple
 
+import pytest
+from gpxpy.geo import Location
 from gpxpy.gpx import (
     GPX,
     GPXRoute,
     GPXRoutePoint,
-    GPXTrackSegment,
-    GPXTrackPoint,
     GPXTrack,
+    GPXTrackPoint,
+    GPXTrackSegment,
     GPXWaypoint,
 )
-from gpxpy.geo import Location
+
 from gpxtable.gpxtable import (
     GPXTableCalculator,
     GPXTrackExt,
@@ -21,7 +21,7 @@ from gpxtable.gpxtable import (
 
 
 @pytest.fixture
-def gpx_data() -> Tuple[GPX, StringIO]:
+def gpx_data() -> tuple[GPX, StringIO]:
     gpx = GPX()
     gpx.author_name = "John Doe"
     gpx.author_email = "unittest@example.com"
@@ -88,7 +88,7 @@ def gpx_data() -> Tuple[GPX, StringIO]:
     return gpx, output
 
 
-def test_print_header(gpx_data: Tuple[GPX, StringIO]) -> None:
+def test_print_header(gpx_data: tuple[GPX, StringIO]) -> None:
     gpx, output = gpx_data
     calculator = GPXTableCalculator(gpx, output)
     calculator.print_header()
@@ -103,14 +103,14 @@ def test_print_header(gpx_data: Tuple[GPX, StringIO]) -> None:
     )
 
 
-def test_print_waypoints(gpx_data: Tuple[GPX, StringIO]) -> None:
+def test_print_waypoints(gpx_data: tuple[GPX, StringIO]) -> None:
     gpx, output = gpx_data
     calculator = GPXTableCalculator(gpx, output)
     calculator.print_waypoints()
     assert "## Track:" in output.getvalue()
 
 
-def test_print_routes(gpx_data: Tuple[GPX, StringIO]) -> None:
+def test_print_routes(gpx_data: tuple[GPX, StringIO]) -> None:
     gpx, output = gpx_data
     calculator = GPXTableCalculator(gpx, output)
     calculator.print_routes()
@@ -129,14 +129,14 @@ def test_print_routes(gpx_data: Tuple[GPX, StringIO]) -> None:
     )
 
 
-def test_get_points_data(gpx_data: Tuple[GPX, StringIO]) -> None:
+def test_get_points_data(gpx_data: tuple[GPX, StringIO]) -> None:
     gpx, _ = gpx_data
     track_ext = GPXTrackExt(gpx.tracks[0])
     points_data = track_ext.get_points_data()
     assert len(points_data) == 2
 
 
-def test_get_nearest_locations(gpx_data: Tuple[GPX, StringIO]) -> None:
+def test_get_nearest_locations(gpx_data: tuple[GPX, StringIO]) -> None:
     gpx, _ = gpx_data
     location = Location(48.2081744, 16.3638188)
     track_ext = GPXTrackExt(gpx.tracks[0])

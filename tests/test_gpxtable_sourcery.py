@@ -1,16 +1,17 @@
-import pytest
 from datetime import datetime, timedelta, timezone
-
 from io import StringIO
+
+import pytest
 from gpxpy.gpx import (
     GPX,
-    GPXTrack,
-    GPXTrackSegment,
-    GPXTrackPoint,
     GPXRoute,
     GPXRoutePoint,
+    GPXTrack,
+    GPXTrackPoint,
+    GPXTrackSegment,
     GPXWaypoint,
 )
+
 from gpxtable import GPXTableCalculator
 
 

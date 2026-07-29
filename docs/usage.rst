@@ -71,7 +71,7 @@ route configuration itself in Basecamp. These may be overridden with the flag
 based upon the `--departure` and `--speed` options.
 
 .. literalinclude:: ../samples/basecamp-route.txt
-   :caption: gpxtable samples/basecamp-route.gpx
+   :caption: gpxtable gpxsamples/basecamp-route.gpx
    :language: text
 
 Building a table from a track and waypoints
@@ -96,7 +96,7 @@ symbol type or by including keywords in the waypoint name.
         Scenic Area: 5 minutes
 
 .. literalinclude:: ../samples/basecamp-route.txt
-   :caption: gpxtable --departure "07/30/2022 09:15:00" samples/basecamp-route.gpx
+   :caption: gpxtable --departure "07/30/2022 09:15:00" gpxsamples/basecamp-route.gpx
    :language: text
 
 Limitations:

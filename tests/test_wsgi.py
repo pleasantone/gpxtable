@@ -1,21 +1,28 @@
-import os
-from flask.testing import FlaskClient
-from flask import url_for
+import io
+
 import pytest
 import responses
-from gpxtable.wsgi import create_app, create_table, InvalidSubmission
+from flask import url_for
+from flask.testing import FlaskClient
+
+from conftest import gpx_sample
+from gpxtable.wsgi import InvalidSubmission, create_app, create_table
 
 TEST_FILE_URL = "http://mock.api/basecamp.gpx"
-TEST_FILE = "samples/basecamp.gpx"
+TEST_FILE = gpx_sample("basecamp")
 TEST_RESPONSE = b"Garmin Desktop App"
-BAD_XML_FILE = "samples/bad-xml.gpx"
+BAD_XML_FILE = gpx_sample("bad-xml")
+
+
+def upload(path, filename: str = "test.gpx") -> tuple[io.BytesIO, str]:
+    """Build a multipart upload tuple from a sample file, without leaking a handle."""
+    return io.BytesIO(path.read_bytes()), filename
 
 
 @pytest.fixture(scope="session")
 def app():
     # add our fake responses
-    with open(TEST_FILE, "rb") as f:
-        responses.add(responses.GET, TEST_FILE_URL, status=200, body=f.read())
+    responses.add(responses.GET, TEST_FILE_URL, status=200, body=TEST_FILE.read_bytes())
     app = create_app()
     app.config["TESTING"] = True
     app.config["WTF_CSRF_ENABLED"] = False
@@ -31,7 +38,7 @@ def test_index(client: FlaskClient) -> None:
 
 def test_upload_file(client: FlaskClient) -> None:
     """Test file upload."""
-    data = {"file": (open(TEST_FILE, "rb"), os.path.dirname(TEST_FILE))}
+    data = {"file": upload(TEST_FILE, "basecamp.gpx")}
     response = client.post(
         url_for("gpxtable.upload_file"), data=data, content_type="multipart/form-data"
     )
@@ -53,7 +60,7 @@ def test_upload_url(client: FlaskClient) -> None:
 
 
 def test_bad_xml(client: FlaskClient) -> None:
-    data = {"file": (open(BAD_XML_FILE, "rb"), os.path.dirname(BAD_XML_FILE))}
+    data = {"file": upload(BAD_XML_FILE, "bad-xml.gpx")}
     response = client.post(
         url_for("gpxtable.upload_file"),
         data=data,
@@ -81,10 +88,9 @@ def test_missing_file_and_url(client: FlaskClient) -> None:
     assert b"Missing URL" in response.data
 
 
-
 def test_invalid_speed(client: FlaskClient) -> None:
     """Non-numeric speed value should redirect with error."""
-    data = {"file": (open(TEST_FILE, "rb"), "test.gpx"), "speed": "fast"}
+    data = {"file": upload(TEST_FILE), "speed": "fast"}
     response = client.post(
         url_for("gpxtable.upload_file"),
         data=data,
@@ -97,7 +103,7 @@ def test_invalid_speed(client: FlaskClient) -> None:
 
 def test_invalid_timezone(client: FlaskClient) -> None:
     """Unknown timezone should redirect with error."""
-    data = {"file": (open(TEST_FILE, "rb"), "test.gpx"), "tz": "Fake/Zone"}
+    data = {"file": upload(TEST_FILE), "tz": "Fake/Zone"}
     response = client.post(
         url_for("gpxtable.upload_file"),
         data=data,
@@ -110,7 +116,7 @@ def test_invalid_timezone(client: FlaskClient) -> None:
 
 def test_invalid_departure(client: FlaskClient) -> None:
     """Unparseable departure time should redirect with error."""
-    data = {"file": (open(TEST_FILE, "rb"), "test.gpx"), "departure": "notadate"}
+    data = {"file": upload(TEST_FILE), "departure": "notadate"}
     response = client.post(
         url_for("gpxtable.upload_file"),
         data=data,
@@ -193,9 +199,11 @@ def test_create_table_htmlcode() -> None:
 
 def test_create_table_invalid_departure() -> None:
     """Unparseable departure string should raise InvalidSubmission."""
-    with open(TEST_FILE, "rb") as f:
-        with pytest.raises(InvalidSubmission, match="Invalid departure"):
-            create_table(f, departure="notadate")
+    with (
+        open(TEST_FILE, "rb") as f,
+        pytest.raises(InvalidSubmission, match="Invalid departure"),
+    ):
+        create_table(f, departure="notadate")
 
 
 if __name__ == "__main__":

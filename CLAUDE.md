@@ -12,6 +12,9 @@ GPXtable converts GPX files (routes and tracks with waypoints) into Markdown or 
 # Install for development (all extras: gunicorn, tests, lint/mypy)
 pip install -e ".[dev]"
 
+# Check out the GPX test inputs (gpxsamples submodule) — required by the tests
+git submodule update --init
+
 # Run all tests
 TZ=America/Los_Angeles pytest
 
@@ -24,19 +27,19 @@ pytest tests/test_gpxtable.py::test_print_header
 # Regenerate expected CLI output files in samples/
 python tests/test_cli.py --generate
 
-# Lint (ruff only — replaces flake8)
+# Lint (ruff only — replaces flake8; rule set is pinned in [tool.ruff.lint])
 ruff check .
 
 # Type check
 mypy src/
 
 # Run the CLI
-gpxtable samples/basecamp-route.gpx
-gpxtable --departure "07/30/2023 09:15:00" samples/basecamp-tracks.gpx
+gpxtable gpxsamples/basecamp-route.gpx
+gpxtable --departure "07/30/2023 09:15:00" gpxsamples/basecamp-tracks.gpx
 
 # Dump/customize waypoint classifier config
 gpxtable --dump-config > myconfig.json
-gpxtable --config myconfig.json samples/basecamp-route.gpx
+gpxtable --config myconfig.json gpxsamples/basecamp-route.gpx
 
 # Run the Flask dev server
 flask --app gpxtable.wsgi:create_app run
@@ -89,6 +92,8 @@ The package has four modules under `src/gpxtable/`:
 
 ### Testing approach
 
+Sample data is split in two: the large `.gpx` **inputs** live in the `gpxsamples` git submodule (checked out at `gpxsamples/`), while the small expected-output fixtures (`*.txt`, `default-config.json`) stay versioned in `samples/`. `tests/conftest.py` owns both paths — use its `gpx_sample()` / `expected_output()` helpers rather than hardcoding directories, and it fails collection with an actionable message if the submodule was never initialized.
+
 CLI tests in `test_cli.py` use golden-file comparison: they run the CLI subprocess and diff against `samples/*.txt` files. When changing output format, regenerate these with `python tests/test_cli.py --generate`. The test environment sets `TZ=America/Los_Angeles` for reproducibility.
 
 Unit tests construct `GPX` objects directly (no file I/O) and assert on `StringIO` output or return values.
@@ -102,6 +107,12 @@ lint + test → deploy-to-gae → release-please
 ```
 
 release-please only runs after a successful GAE deployment.
+
+### Required Actions secrets
+
+**`GPXSAMPLES_TOKEN`** — a PAT with read access to *both* `pleasantone/gpxtable` and the private `pleasantone/gpxsamples` submodule repo. The `test` job passes it to `actions/checkout`, which applies it to submodule fetches too. Without it the default `GITHUB_TOKEN` is scoped to this repo alone and the submodule clone fails with the misleading `Repository not found`. The workflow falls back to the default token when the secret is absent, so forks still check out the main repo (their `test` job will fail on the submodule).
+
+**`MY_RELEASE_PLEASE_TOKEN`** — used by the release-please job.
 
 **`requirements.txt`** lists the production runtime deps (flask, gunicorn, gpxpy, etc.) and is required for GAE — the platform reads this file to install dependencies, it does not read `pyproject.toml`. Keep it in sync with the `web`/`gunicorn` extras in `pyproject.toml`.
 
