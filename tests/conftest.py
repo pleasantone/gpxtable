@@ -30,7 +30,14 @@ def expected_output(name: str) -> Path:
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Fail fast with an actionable message if the submodule is not checked out."""
+    """Fail fast with an actionable message if the submodule is not checked out.
+
+    This is deliberately global rather than scoped to the tests that call
+    ``gpx_sample()``. Skipping those tests when the inputs are missing would let
+    a broken checkout look like a passing run — which is exactly how the sample
+    move went unnoticed. An unusable checkout should be loud, not quiet, so a
+    missing submodule stops the whole run.
+    """
     if not any(GPX_DIR.glob("*.gpx")):
         raise pytest.UsageError(
             f"No GPX sample data found in {GPX_DIR}. "

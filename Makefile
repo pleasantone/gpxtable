@@ -54,7 +54,9 @@ submodules:
 test: submodules
 	TZ=America/Los_Angeles pytest
 
-test-unit:
+# test-unit needs no GPX inputs itself, but conftest's submodule check is
+# deliberately global (see tests/conftest.py), so every pytest run requires it.
+test-unit: submodules
 	TZ=America/Los_Angeles pytest tests/test_gpxtable.py
 
 test-cli: submodules
@@ -73,19 +75,19 @@ typecheck:
 
 # ── CLI demos ────────────────────────────────────────────────────────────────
 
-demo-route:
+demo-route: submodules
 	gpxtable gpxsamples/basecamp-route.gpx
 
-demo-tracks:
+demo-tracks: submodules
 	gpxtable --departure "07/30/2023 09:15:00" gpxsamples/basecamp-tracks.gpx
 
-demo-basecamp:
+demo-basecamp: submodules
 	gpxtable gpxsamples/basecamp.gpx
 
 demo-config:
 	gpxtable --dump-config
 
-demo-custom: /tmp/myconfig.json
+demo-custom: submodules /tmp/myconfig.json
 	gpxtable --config /tmp/myconfig.json gpxsamples/basecamp-route.gpx
 
 /tmp/myconfig.json:
