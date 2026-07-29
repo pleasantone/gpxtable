@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.2.2](https://github.com/pleasantone/gpxtable/compare/v2.2.1...v2.2.2) (2026-07-29)
+
+
+### Bug Fixes
+
+* **make:** initialize submodules for the demo and unit-test targets ([cf4bcaa](https://github.com/pleasantone/gpxtable/commit/cf4bcaa928e86d981c061c9c4678f81489d17ca0))
+
+
+### Documentation
+
+* point sample invocations at gpxsamples/ ([e72e63d](https://github.com/pleasantone/gpxtable/commit/e72e63da392fc4680135bbbda6b587514ba71087))
+
 ## [2.2.1](https://github.com/pleasantone/gpxtable/compare/v2.0.2...v2.2.1) (2026-05-19)
 
 
