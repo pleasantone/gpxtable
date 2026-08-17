@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
-    - uses: astral-sh/setup-uv@v9.0.0
+    - uses: astral-sh/setup-uv@v10.0.1
       with:
         enable-cache: true
         python-version: "3.12"
@@ -48,7 +48,7 @@ jobs:
         # both repos; checkout applies it to submodule fetches as well.
         # Falls back to the default token so forks still check out the main repo.
         token: ${{ secrets.GPXSAMPLES_TOKEN || github.token }}
-    - uses: astral-sh/setup-uv@v9.0.0
+    - uses: astral-sh/setup-uv@v10.0.1
       with:
         enable-cache: true
         python-version: "3.12"
